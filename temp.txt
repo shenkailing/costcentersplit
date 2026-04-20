@@ -1,0 +1,35 @@
+' Kilian分组
+    For i = 1 To groupRowsKilian.Count
+        wsRes.Rows(groupRowsKilian(i)).Copy
+        wsRes.Rows(resRow).PasteSpecial xlPasteValuesAndNumberFormats
+        wsRes.Rows(resRow).PasteSpecial xlPasteFormats
+        resRow = resRow + 1
+    Next i
+    ' Kilian小计
+    wsRes.Cells(resRow, 2).Value = "Kilian小计"
+    For j = 1 To lastCol
+        If j < 19 Then
+            wsRes.Cells(resRow, j).Value = ""
+        Else
+            wsRes.Cells(resRow, j).Formula = "=SUM(" & wsRes.Cells(resRow - groupRowsKilian.Count, j).Address & ":" & wsRes.Cells(resRow - 1, j).Address & ")"
+        End If
+    Next j
+    resRow = resRow + 1
+
+    ' FM分组
+    For i = 1 To groupRowsFM.Count
+        wsRes.Rows(groupRowsFM(i)).Copy
+        wsRes.Rows(resRow).PasteSpecial xlPasteValuesAndNumberFormats
+        wsRes.Rows(resRow).PasteSpecial xlPasteFormats
+        resRow = resRow + 1
+    Next i
+    ' FM小计
+    wsRes.Cells(resRow, 2).Value = "FM小计"
+    For j = 1 To lastCol
+        If j < 19 Then
+            wsRes.Cells(resRow, j).Value = ""
+        Else
+            wsRes.Cells(resRow, j).Formula = "=SUM(" & wsRes.Cells(resRow - groupRowsFM.Count, j).Address & ":" & wsRes.Cells(resRow - 1, j).Address & ")"
+        End If
+    Next j
+    resRow = resRow + 1
