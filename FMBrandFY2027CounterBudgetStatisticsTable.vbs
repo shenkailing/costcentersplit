@@ -40,7 +40,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     wsRes.Rows(dataEndRow + 1).Insert
     Dim sumRow As Long
     sumRow = dataEndRow + 1
-    wsRes.Cells(sumRow, 4).Value = "合计："
+    wsRes.Cells(sumRow, 4).Value = "Total:"
     For i = 3 To dataEndRow
         If wsRes.Cells(i, 1).Value = "Y" Then
             groupRowsKilian.Add i
@@ -89,7 +89,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
         resRow = resRow + 1
     Next i
     kilianEndRow = resRow - 1
-    wsRes.Cells(resRow, 4).Value = "KL合计："
+    wsRes.Cells(resRow, 4).Value = "KL Total:"
     For j = 5 To lastCol
         If j < 17 Then
             wsRes.Cells(resRow, j).Value = ""
@@ -112,7 +112,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
         resRow = resRow + 1
     Next i
     fmEndRow = resRow - 1
-    wsRes.Cells(resRow, 4).Value = "FM合计："
+    wsRes.Cells(resRow, 4).Value = "FM Total:"
     For j = 5 To lastCol
         If j < 17 Then
             wsRes.Cells(resRow, j).Value = ""
@@ -335,6 +335,8 @@ Private Function MapOneDriveUrlToLocalFolder(ByVal urlPath As String) As String
 FailMap:
     MapOneDriveUrlToLocalFolder = ""
 End Function
+
+
 
 
 
