@@ -139,35 +139,15 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     Dim fmTotalRow As Long
     fmTotalRow = 0
     For i = 1 To wsRes.UsedRange.Rows.Count
-        If wsRes.Cells(i, 4).Value = "FMºÏ¼Æ£º" Then
+        If wsRes.Cells(i, 4).Value = "FM Total:" Then
             fmTotalRow = i
             Exit For
         End If
     Next i
 
-    ' If found, delete all rows below it
-    If fmTotalRow > 0 Then
-        Dim lastUsedRow As Long
-        lastUsedRow = 0
-        For j = 1 To lastCol
-            Dim colLastRow As Long
-            colLastRow = wsRes.Cells(wsRes.Rows.Count, j).End(xlUp).Row
-            If colLastRow > lastUsedRow Then
-                lastUsedRow = colLastRow
-            End If
-        Next j
-        If fmTotalRow < lastUsedRow Then
-            wsRes.Rows((fmTotalRow + 1) & ":" & lastUsedRow).Delete
-        End If
-    End If
-
-
-
-    Dim fmtLastRow As Long, fmtLastCol As Long
-    fmtLastRow = wsRes.UsedRange.Rows(wsRes.UsedRange.Rows.Count).Row
     fmtLastCol = wsRes.Cells(1, wsRes.Columns.Count).End(xlToLeft).Column
     Dim rowIdx As Long, srcRow As Long
-    For rowIdx = 2 To fmtLastRow
+    For rowIdx = 2 To fmTotalRow
         If (rowIdx Mod 2) = 0 Then
             srcRow = 2
         Else
@@ -178,7 +158,8 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     Next rowIdx
     Application.CutCopyMode = False
 
-
+    'delete column A and B
+    wsRes.Columns("A:B").Delete Shift:=xlToLeft
 
     Dim newWb As Workbook
     Dim savePath As String, fName As String
@@ -198,7 +179,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     If IsHttpPath(basePath) Then
         localFolder = MapOneDriveUrlToLocalFolder(basePath)
         If localFolder <> "" Then
-            savePath = localFolder & "\" & fName & ".xlsx"
+            savePath = localFolder & "\" & fName & "_copy.xlsx"
         Else
             saveResult = Application.GetSaveAsFilename( _
                 InitialFileName:=fName & ".xlsx", _
@@ -209,7 +190,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
         End If
     ElseIf basePath = "" Then
         saveResult = Application.GetSaveAsFilename( _
-            InitialFileName:=fName & ".xlsx", _
+            InitialFileName:=fName & "_copy" & ".xlsx", _
             FileFilter:="Excel Workbook (*.xlsx), *.xlsx", _
             Title:="Save report as")
         If VarType(saveResult) = vbBoolean And saveResult = False Then Exit Sub
