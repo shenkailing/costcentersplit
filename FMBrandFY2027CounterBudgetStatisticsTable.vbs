@@ -171,6 +171,48 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     'delete column A and B, after style is applied, to avoid impact on formatting
     wsRes.Columns("A:B").Delete Shift:=xlToLeft
 
+    ' set brand to KL/FM only for detail rows before the first Total section
+    Dim firstTotalRow As Long
+    firstTotalRow = 0
+    For i = 3 To wsRes.UsedRange.Rows.Count
+        If Trim$(CStr(wsRes.Cells(i, 2).Value)) = "Total:" Then
+            firstTotalRow = i
+            Exit For
+        End If
+    Next i
+
+    If firstTotalRow > 3 Then
+        For i = 3 To firstTotalRow - 1
+            If Application.WorksheetFunction.CountA(wsRes.Rows(i)) > 0 Then
+                wsRes.Cells(i, 1).Value = "KL/FM"
+            End If
+        Next i
+    End If
+
+    ' final cleanup: remove all non-empty rows below "FM Total:" in result sheet
+    Dim lastUsedRowCleanup As Long
+    Dim lastContentCell As Range
+    If fmTotalRow > 0 Then
+        Set lastContentCell = wsRes.Cells.Find(What:="*", _
+                                               After:=wsRes.Cells(1, 1), _
+                                               LookIn:=xlFormulas, _
+                                               LookAt:=xlPart, _
+                                               SearchOrder:=xlByRows, _
+                                               SearchDirection:=xlPrevious, _
+                                               MatchCase:=False)
+        If Not lastContentCell Is Nothing Then
+            lastUsedRowCleanup = lastContentCell.Row
+        Else
+            lastUsedRowCleanup = fmTotalRow
+        End If
+
+        For i = lastUsedRowCleanup To fmTotalRow + 1 Step -1
+            If Application.WorksheetFunction.CountA(wsRes.Rows(i)) > 0 Then
+                wsRes.Rows(i).Delete
+            End If
+        Next i
+    End If
+
     Dim newWb As Workbook
     Dim savePath As String, fName As String
     Dim basePath As String, localFolder As String

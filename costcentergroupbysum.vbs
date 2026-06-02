@@ -161,6 +161,45 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     'delete column A and B
     wsRes.Columns("A:B").Delete Shift:=xlToLeft
 
+    For i = 2 To wsRes.UsedRange.Rows.Count
+        If Trim$(CStr(wsRes.Cells(i, 2).Value)) = "Total:" Then
+            firstTotalRow = i
+            Exit For
+        End If
+    Next i
+
+    If firstTotalRow > 2 Then
+        For i = 2 To firstTotalRow - 1
+            If Application.WorksheetFunction.CountA(wsRes.Rows(i)) > 0 Then
+                wsRes.Cells(i, 1).Value = "KL/FM"
+            End If
+        Next i
+    End If
+
+    ' final cleanup: remove all non-empty rows below "FM Total:" in result sheet
+    Dim lastUsedRowCleanup As Long
+    Dim lastContentCell As Range
+    If fmTotalRow > 0 Then
+        Set lastContentCell = wsRes.Cells.Find(What:="*", _
+                                               After:=wsRes.Cells(1, 1), _
+                                               LookIn:=xlFormulas, _
+                                               LookAt:=xlPart, _
+                                               SearchOrder:=xlByRows, _
+                                               SearchDirection:=xlPrevious, _
+                                               MatchCase:=False)
+        If Not lastContentCell Is Nothing Then
+            lastUsedRowCleanup = lastContentCell.Row
+        Else
+            lastUsedRowCleanup = fmTotalRow
+        End If
+
+        For i = lastUsedRowCleanup To fmTotalRow + 1 Step -1
+            If Application.WorksheetFunction.CountA(wsRes.Rows(i)) > 0 Then
+                wsRes.Rows(i).Delete
+            End If
+        Next i
+    End If
+
     Dim newWb As Workbook
     Dim savePath As String, fName As String
     Dim basePath As String, localFolder As String
@@ -182,7 +221,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
             savePath = localFolder & "\" & fName & "_copy.xlsx"
         Else
             saveResult = Application.GetSaveAsFilename( _
-                InitialFileName:=fName & ".xlsx", _
+                InitialFileName:=fName & "_copy.xlsx", _
                 FileFilter:="Excel Workbook (*.xlsx), *.xlsx", _
                 Title:="Save report as")
             If VarType(saveResult) = vbBoolean And saveResult = False Then Exit Sub
@@ -190,13 +229,13 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
         End If
     ElseIf basePath = "" Then
         saveResult = Application.GetSaveAsFilename( _
-            InitialFileName:=fName & "_copy" & ".xlsx", _
+            InitialFileName:=fName & "_copy.xlsx", _
             FileFilter:="Excel Workbook (*.xlsx), *.xlsx", _
             Title:="Save report as")
         If VarType(saveResult) = vbBoolean And saveResult = False Then Exit Sub
         savePath = CStr(saveResult)
     Else
-        savePath = basePath & "\" & fName & ".xlsx"
+        savePath = basePath & "\" & fName & "_copy.xlsx"
     End If
 
     If LCase$(Right$(savePath, 5)) <> ".xlsx" Then
@@ -219,7 +258,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     If Right$(tempPath, 1) <> "\" Then
         tempPath = tempPath & "\"
     End If
-    tempFile = tempPath & "CostCenterGroupBySum_" & Format(Now, "yyyymmdd_hhnnss") & ".xlsx"
+    tempFile = tempPath & "CostCenterGroupBySum_" & Format(Now, "yyyymmdd_hhnnss") & "_copy.xlsx"
 
     On Error GoTo SaveErr
     Application.DisplayAlerts = False
