@@ -1,6 +1,6 @@
 Sub costcentersplit_Click()
 Dim wsSrc As Worksheet, wsRes As Worksheet
-    Dim lastRow As Long, lastCol As Long, resRow As Long
+    Dim lastCol As Long, resRow As Long
     Dim i As Long, j As Long
     Dim brand As String, storeName As String
     Dim startCol As Long
@@ -18,18 +18,19 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     Set wsRes = ThisWorkbook.Sheets.Add(After:=wsSrc)
     wsRes.Name = "CostCenterGroupBySumResult"
 
-    lastRow = wsSrc.Cells(wsSrc.Rows.Count, 1).End(xlUp).Row
-    lastCol = wsSrc.Cells(2, wsSrc.Columns.Count).End(xlToLeft).Column
+    lastCol = wsSrc.Cells(3, wsSrc.Columns.Count).End(xlToLeft).Column
 
     wsSrc.UsedRange.Copy
     wsRes.Cells(1, 1).PasteSpecial xlPasteValuesAndNumberFormats
     wsRes.Cells(1, 1).PasteSpecial xlPasteFormats
     Application.CutCopyMode = False
-    wsRes.Rows(1).Delete
-
-
+    ' 删除新SHEET第一行空白行（如有），内容会自动上移
+    If Application.WorksheetFunction.CountA(wsRes.Rows(1)) = 0 Then
+        wsRes.Rows(1).Delete
+    End If
+    ' 此时前两行为表头和副表头，从第3行开始为有效数据
     Dim dataEndRow As Long
-    dataEndRow = 2
+    dataEndRow = 3
     Do While wsRes.Cells(dataEndRow, 3).Value <> ""
         dataEndRow = dataEndRow + 1
     Loop
@@ -39,7 +40,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     Dim sumRow As Long
     sumRow = dataEndRow + 1
     wsRes.Cells(sumRow, 4).Value = "Total:"
-    For i = 2 To dataEndRow
+    For i = 3 To dataEndRow
         If wsRes.Cells(i, 1).Value = "Y" Then
             groupRowsKilian.Add i
         End If
@@ -49,13 +50,13 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     Next i
 
     For j = 5 To lastCol
-        If j < 19 Then
+        If j < 17 Then
             wsRes.Cells(sumRow, j).Value = ""
         Else
             Dim sumFormula As String, first As Boolean
             sumFormula = ""
             first = True
-            For i = 2 To dataEndRow
+            For i = 3 To dataEndRow
                 If wsRes.Cells(i, 1).Value <> "Y" And wsRes.Cells(i, 2).Value <> "Y" And wsRes.Cells(i, 3).Value <> "" Then
                     If first Then
                         sumFormula = wsRes.Cells(i, j).Address
@@ -77,7 +78,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     
     wsRes.Rows(resRow).Insert Shift:=xlDown
     resRow = resRow + 1
-    Dim kilianStartRow As Long
+    Dim kilianStartRow As Long, kilianEndRow As Long
     kilianStartRow = resRow
     For i = 1 To groupRowsKilian.Count
         wsRes.Rows(resRow).Insert Shift:=xlDown
@@ -86,18 +87,21 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
         wsRes.Rows(resRow).PasteSpecial xlPasteFormats
         resRow = resRow + 1
     Next i
+    kilianEndRow = resRow - 1
     wsRes.Cells(resRow, 4).Value = "KL Total:"
     For j = 5 To lastCol
-        If j < 19 Then
+        If j < 17 Then
             wsRes.Cells(resRow, j).Value = ""
+        ElseIf kilianEndRow >= kilianStartRow Then
+            wsRes.Cells(resRow, j).Formula = "=SUM(" & wsRes.Cells(kilianStartRow, j).Address & ":" & wsRes.Cells(kilianEndRow, j).Address & ")"
         Else
-            wsRes.Cells(resRow, j).Formula = "=SUM(" & wsRes.Cells(kilianStartRow, j).Address & ":" & wsRes.Cells(resRow - 1, j).Address & ")"
+            wsRes.Cells(resRow, j).Value = ""
         End If
     Next j
     resRow = resRow + 1
     wsRes.Rows(resRow).Insert Shift:=xlDown
     resRow = resRow + 1
-    Dim fmStartRow As Long
+    Dim fmStartRow As Long, fmEndRow As Long
     fmStartRow = resRow
     For i = 1 To groupRowsFM.Count
         wsRes.Rows(resRow).Insert Shift:=xlDown
@@ -106,12 +110,15 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
         wsRes.Rows(resRow).PasteSpecial xlPasteFormats
         resRow = resRow + 1
     Next i
+    fmEndRow = resRow - 1
     wsRes.Cells(resRow, 4).Value = "FM Total:"
     For j = 5 To lastCol
-        If j < 19 Then
+        If j < 17 Then
             wsRes.Cells(resRow, j).Value = ""
+        ElseIf fmEndRow >= fmStartRow Then
+            wsRes.Cells(resRow, j).Formula = "=SUM(" & wsRes.Cells(fmStartRow, j).Address & ":" & wsRes.Cells(fmEndRow, j).Address & ")"
         Else
-            wsRes.Cells(resRow, j).Formula = "=SUM(" & wsRes.Cells(fmStartRow, j).Address & ":" & wsRes.Cells(resRow - 1, j).Address & ")"
+            wsRes.Cells(resRow, j).Value = ""
         End If
     Next j
     resRow = resRow + 1
@@ -126,7 +133,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     Dim delRows As Collection
     Set delRows = New Collection
     dataEndRow = dataEndRow - 1
-    For i = 2 To dataEndRow
+    For i = 3 To dataEndRow
         If wsRes.Cells(i, 1).Value = "Y" Or wsRes.Cells(i, 2).Value = "Y" Then
             delRows.Add i
         End If
@@ -145,31 +152,71 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
         End If
     Next i
 
-    fmtLastCol = wsRes.Cells(1, wsRes.Columns.Count).End(xlToLeft).Column
-    Dim rowIdx As Long, srcRow As Long
-    For rowIdx = 2 To fmTotalRow
+    Dim fmtLastRow As Long, fmtLastCol As Long
+    fmtLastRow = wsRes.UsedRange.Rows(wsRes.UsedRange.Rows.Count).Row
+    fmtLastCol = wsRes.Cells(3, wsRes.Columns.Count).End(xlToLeft).Column '修正为第2行的最后一列，确保所有数据列都刷样式
+    Dim rowIdx As Long
+    ' 复制第4、5行样式到第6行及以后所有数据行
+    For rowIdx = 6 To fmtLastRow
         If (rowIdx Mod 2) = 0 Then
-            srcRow = 2
+            wsRes.Range(wsRes.Cells(4, 1), wsRes.Cells(4, fmtLastCol)).Copy
         Else
-            srcRow = 3
+            wsRes.Range(wsRes.Cells(5, 1), wsRes.Cells(5, fmtLastCol)).Copy
         End If
-        wsRes.Range(wsRes.Cells(srcRow, 1), wsRes.Cells(srcRow, fmtLastCol)).Copy
         wsRes.Range(wsRes.Cells(rowIdx, 1), wsRes.Cells(rowIdx, fmtLastCol)).PasteSpecial Paste:=xlPasteFormats
     Next rowIdx
     Application.CutCopyMode = False
 
-    'delete column A and B
+
+    Dim r As Long
+    Dim valA As String
+    Dim valB As String
+
+    For r = 2 To fmtLastRow
+        valA = Trim$(UCase$(wsRes.Cells(r, "A").Value))
+        valB = Trim$(UCase$(wsRes.Cells(r, "B").Value))
+    
+        '1. Total行不赋值
+        If valB = "TOTAL:" _
+           Or valB = "KL TOTAL:" _
+           Or valB = "FM TOTAL:" Then
+            '不处理
+    
+        '2. 特殊空行不赋值：A、B、C都为空
+        ElseIf valA = "" And valB = "" And Trim$(wsRes.Cells(r, "C").Value) = "" Then
+            '不处理
+    
+        '3. A、B都为空，但C原来有内容，赋值KL/FM
+        ElseIf valA = "" And valB = "" Then
+            wsRes.Cells(r, "C").Value = "KL/FM"
+    
+        '4. A列有Y，赋值KL
+        ElseIf valA = "Y" Then
+            wsRes.Cells(r, "C").Value = "KL"
+    
+        '5. B列有Y，赋值FM
+        ElseIf valB = "Y" Then
+            wsRes.Cells(r, "C").Value = "FM"
+    
+        Else
+            wsRes.Cells(r, "C").Value = ""
+        End If
+    Next r
+    'delete column A and B, after style is applied, to avoid impact on formatting
     wsRes.Columns("A:B").Delete Shift:=xlToLeft
 
-    For i = 2 To wsRes.UsedRange.Rows.Count
+    ' set brand to KL/FM only for detail rows before the first Total section
+    Dim firstTotalRow As Long
+    firstTotalRow = 0
+    For i = 3 To wsRes.UsedRange.Rows.Count
         If Trim$(CStr(wsRes.Cells(i, 2).Value)) = "Total:" Then
             firstTotalRow = i
             Exit For
         End If
     Next i
 
-    If firstTotalRow > 2 Then
-        For i = 2 To firstTotalRow - 1
+    If firstTotalRow > 3 Then
+        For i = 3 To firstTotalRow - 1
             If Application.WorksheetFunction.CountA(wsRes.Rows(i)) > 0 Then
                 wsRes.Cells(i, 1).Value = "KL/FM"
             End If
@@ -213,6 +260,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     If InStrRev(fName, ".") > 0 Then
         fName = Left(fName, InStrRev(fName, ".") - 1)
     End If
+
     basePath = Trim$(ThisWorkbook.Path)
 
     If IsHttpPath(basePath) Then
@@ -241,7 +289,6 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     If LCase$(Right$(savePath, 5)) <> ".xlsx" Then
         savePath = savePath & ".xlsx"
     End If
-
 
     fileExists = FileExistsNoErr(savePath)
 
@@ -286,7 +333,7 @@ SaveErr:
     Set newWb = Nothing
     On Error GoTo 0
     MsgBox "Failed to generate xlsx file." & vbCrLf & _
-        "Details: " & errMsg, vbExclamation
+           "Details: " & errMsg, vbExclamation
     Exit Sub
 
 CopyErr:
@@ -297,7 +344,7 @@ CopyErr:
     On Error GoTo 0
     MsgBox "The report file was created, but copy to target folder failed." & vbCrLf & _
            "Target: " & savePath & vbCrLf & _
-        "Details: " & errMsg, vbExclamation
+           "Details: " & errMsg, vbExclamation
 
 End Sub
 
@@ -347,8 +394,6 @@ Private Function MapOneDriveUrlToLocalFolder(ByVal urlPath As String) As String
 FailMap:
     MapOneDriveUrlToLocalFolder = ""
 End Function
-
-
 
 
 

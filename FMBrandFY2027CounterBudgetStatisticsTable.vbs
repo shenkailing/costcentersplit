@@ -155,7 +155,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
 
     Dim fmtLastRow As Long, fmtLastCol As Long
     fmtLastRow = wsRes.UsedRange.Rows(wsRes.UsedRange.Rows.Count).Row
-    fmtLastCol = wsRes.Cells(2, wsRes.Columns.Count).End(xlToLeft).Column '修正为第2行的最后一列，确保所有数据列都刷样式
+    fmtLastCol = wsRes.Cells(3, wsRes.Columns.Count).End(xlToLeft).Column '修正为第2行的最后一列，确保所有数据列都刷样式
     Dim rowIdx As Long
     ' 复制第4、5行样式到第6行及以后所有数据行
     For rowIdx = 6 To fmtLastRow
@@ -167,6 +167,41 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
         wsRes.Range(wsRes.Cells(rowIdx, 1), wsRes.Cells(rowIdx, fmtLastCol)).PasteSpecial Paste:=xlPasteFormats
     Next rowIdx
     Application.CutCopyMode = False
+    
+    Dim r As Long
+    Dim valA As String
+    Dim valB As String
+
+    For r = 3 To fmtLastRow
+        valA = Trim$(UCase$(wsRes.Cells(r, "A").Value))
+        valB = Trim$(UCase$(wsRes.Cells(r, "B").Value))
+    
+        '1. Total行不赋值
+        If valB = "TOTAL:" _
+           Or valB = "KL TOTAL:" _
+           Or valB = "FM TOTAL:" Then
+            '不处理
+    
+        '2. 特殊空行不赋值：A、B、C都为空
+        ElseIf valA = "" And valB = "" And Trim$(wsRes.Cells(r, "C").Value) = "" Then
+            '不处理
+    
+        '3. A、B都为空，但C原来有内容，赋值KL/FM
+        ElseIf valA = "" And valB = "" Then
+            wsRes.Cells(r, "C").Value = "KL/FM"
+    
+        '4. A列有Y，赋值KL
+        ElseIf valA = "Y" Then
+            wsRes.Cells(r, "C").Value = "KL"
+    
+        '5. B列有Y，赋值FM
+        ElseIf valB = "Y" Then
+            wsRes.Cells(r, "C").Value = "FM"
+    
+        Else
+            wsRes.Cells(r, "C").Value = ""
+        End If
+    Next r
 
     'delete column A and B, after style is applied, to avoid impact on formatting
     wsRes.Columns("A:B").Delete Shift:=xlToLeft
@@ -360,6 +395,8 @@ Private Function MapOneDriveUrlToLocalFolder(ByVal urlPath As String) As String
 FailMap:
     MapOneDriveUrlToLocalFolder = ""
 End Function
+
+
 
 
 
