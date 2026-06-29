@@ -28,9 +28,9 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     If Application.WorksheetFunction.CountA(wsRes.Rows(1)) = 0 Then
         wsRes.Rows(1).Delete
     End If
-    ' 此时前两行为表头和副表头，从第3行开始为有效数据
+    ' 此时第一行为表头，从第2行开始为有效数据
     Dim dataEndRow As Long
-    dataEndRow = 3
+    dataEndRow = 2
     Do While wsRes.Cells(dataEndRow, 3).Value <> ""
         dataEndRow = dataEndRow + 1
     Loop
@@ -49,14 +49,15 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
         End If
     Next i
 
+    'sum must begin from column 17, as columns 5-16 are non-numeric (text) columns
     For j = 5 To lastCol
-        If j < 17 Then
+        If j < 19 Then
             wsRes.Cells(sumRow, j).Value = ""
         Else
             Dim sumFormula As String, first As Boolean
             sumFormula = ""
             first = True
-            For i = 3 To dataEndRow
+            For i = 2 To dataEndRow
                 If wsRes.Cells(i, 1).Value <> "Y" And wsRes.Cells(i, 2).Value <> "Y" And wsRes.Cells(i, 3).Value <> "" Then
                     If first Then
                         sumFormula = wsRes.Cells(i, j).Address
@@ -90,7 +91,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     kilianEndRow = resRow - 1
     wsRes.Cells(resRow, 4).Value = "KL Total:"
     For j = 5 To lastCol
-        If j < 17 Then
+        If j < 19 Then
             wsRes.Cells(resRow, j).Value = ""
         ElseIf kilianEndRow >= kilianStartRow Then
             wsRes.Cells(resRow, j).Formula = "=SUM(" & wsRes.Cells(kilianStartRow, j).Address & ":" & wsRes.Cells(kilianEndRow, j).Address & ")"
@@ -113,7 +114,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     fmEndRow = resRow - 1
     wsRes.Cells(resRow, 4).Value = "FM Total:"
     For j = 5 To lastCol
-        If j < 17 Then
+        If j < 19 Then
             wsRes.Cells(resRow, j).Value = ""
         ElseIf fmEndRow >= fmStartRow Then
             wsRes.Cells(resRow, j).Formula = "=SUM(" & wsRes.Cells(fmStartRow, j).Address & ":" & wsRes.Cells(fmEndRow, j).Address & ")"
@@ -133,7 +134,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     Dim delRows As Collection
     Set delRows = New Collection
     dataEndRow = dataEndRow - 1
-    For i = 3 To dataEndRow
+    For i = 2 To dataEndRow
         If wsRes.Cells(i, 1).Value = "Y" Or wsRes.Cells(i, 2).Value = "Y" Then
             delRows.Add i
         End If
@@ -145,7 +146,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
     ' find fm sum row number
     Dim fmTotalRow As Long
     fmTotalRow = 0
-    For i = 1 To wsRes.UsedRange.Rows.Count
+    For i = 2 To wsRes.UsedRange.Rows.Count
         If wsRes.Cells(i, 4).Value = "FM Total:" Then
             fmTotalRow = i
             Exit For
@@ -154,7 +155,7 @@ Dim wsSrc As Worksheet, wsRes As Worksheet
 
     Dim fmtLastRow As Long, fmtLastCol As Long
     fmtLastRow = wsRes.UsedRange.Rows(wsRes.UsedRange.Rows.Count).Row
-    fmtLastCol = wsRes.Cells(3, wsRes.Columns.Count).End(xlToLeft).Column '修正为第2行的最后一列，确保所有数据列都刷样式
+    fmtLastCol = wsRes.Cells(2, wsRes.Columns.Count).End(xlToLeft).Column '修正为第2行的最后一列，确保所有数据列都刷样式
     Dim rowIdx As Long
     ' 复制第4、5行样式到第6行及以后所有数据行
     For rowIdx = 6 To fmtLastRow
@@ -394,6 +395,8 @@ Private Function MapOneDriveUrlToLocalFolder(ByVal urlPath As String) As String
 FailMap:
     MapOneDriveUrlToLocalFolder = ""
 End Function
+
+
 
 
 
